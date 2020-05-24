@@ -1,0 +1,9 @@
+#!/bin/bash
+
+### starting reposync
+
+echo "syncing repos"
+
+{% for repo in rhsm_rhel8_repos %}
+reposync -p /repo --download-metadata --repo={{repo}}
+{% endfor %}

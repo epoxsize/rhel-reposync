@@ -1,0 +1,41 @@
+---
+##############################
+# DEFAULT REPOS AND BASE SOFTWARE
+##############################
+
+enable_rhsm: True
+
+##############################
+# DEFAULT REPOS FOR SETTING UP CEPH 3/4
+##############################
+
+
+rhsm_rhel6_repos:
+  - rhel-7-server-rpms
+  - rhel-7-server-optional-rpms
+  - rhel-7-server-extras-rpms
+  - rhel-7-server-supplementary-rpms
+  - rhel-server-rhscl-7-rpms
+rhsm_rhel7_repos:
+  - rhel-7-server-rpms
+  - rhel-7-server-optional-rpms
+  - rhel-7-server-extras-rpms
+  - rhel-7-server-supplementary-rpms
+  - rhel-server-rhscl-7-rpms
+rhsm_rhel8_repos:
+  - rhel-8-for-x86_64-baseos-rpms
+  - rhel-8-for-x86_64-appstream-rpms
+rhel_additional_software:
+  - firewalld
+  - yum-utils
+  - createrepo
+
+rhel_repo_dir: /repo/
+##############################
+# DEFAULTS PORTS FOR ENABLING IN CEPH 3/4
+##############################
+
+rhel_ports_to_open:
+  - 80/tcp
+
+

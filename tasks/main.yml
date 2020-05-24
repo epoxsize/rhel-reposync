@@ -1,0 +1,218 @@
+---
+- name: Setting Up RHSM
+  redhat_subscription:
+      username: "{{ rhsm_username }}"
+      password: "{{ rhsm_password }}"
+      pool_ids: "{{ rhsm_pool_id }}"
+      force_register: yes
+  when: enable_rhsm|bool == True
+#####
+##### RHSM registration works only when its enabled during workflow process
+#####
+- name: Disabling all repos
+  rhsm_repository:
+      state: disabled 
+      name: "*"
+- name: Setting up repos
+  rhsm_repository:
+      state: present 
+      name: "{{ item }}" 
+  when: 
+    - ansible_distribution == "RedHat"
+    - ansible_distribution_major_version == "8"
+  with_items:
+    - "{{rhsm_rhel8_repos}}"
+- name: Setting up Repos for RHEL7 
+  rhsm_repository:
+      state: present 
+      name: "{{ item }}" 
+  when: 
+    - ansible_distribution == "RedHat"
+    - ansible_distribution_major_version == "7"
+  with_items:
+    - "{{ rhsm_rhel7_repos }}"
+- name: Upgrading package to the latest versions
+  dnf:
+    state: latest
+    name: "*"
+  when: 
+    - ansible_distribution == "RedHat"
+    - ansible_distribution_major_version == "8"
+##### Installing some packages for testing purposes
+- name: Installing nginx in RHEL8
+  package: 
+    name: nginx
+    state: present
+  when: 
+    - ansible_distribution == "RedHat"
+    - ansible_distribution_major_version == "8"
+- name: Installing nginx in RHEL7
+  package: 
+    name: rh-nginx18
+    state: present
+  when: 
+    - ansible_distribution == "RedHat"
+    - ansible_distribution_major_version == "7"
+- name: Enabling firewalld
+  service:
+    name: firewalld
+    state: started
+- name: Starring firewalld
+  service:
+    name: firewalld
+    state: started
+- name: Enabling Nessecary ports
+  firewalld:
+    state: enabled
+    port: "{{ item }}"
+    permanent: True
+  with_items: 
+    - "{{ rhel_ports_to_open }}"
+- name: Reload FirewallCMD
+  command: firewall-cmd --reload
+- name: Restart Firewalld
+  service:
+      name: firewalld
+      state: restarted
+
+- name: Disabling Selinux
+  selinux:
+    state: disabled  
+  tags: starting_config_generation
+- name: creating directory for repos
+  file:
+    path: "{{ rhel_repo_dir }}"
+    state: directory
+    mode: '777'
+  tags: starting_config_generation
+#############
+# Working with NGINX
+#############
+
+- name: Installing podman in rhel8 and generating bash config
+  block:
+    - name: installing podman
+      package: 
+        name: podman
+        state: present
+    - name: creating directory for nginx
+      file:
+        state: directory
+        path: /etc/nginx/
+        owner: root
+        group: root
+        recurse: yes
+    - name: generating nginx config
+      template:
+        src: nginx.j2
+        dest: /etc/nginx/nginx.conf
+        mode: 777
+    - name: Pull an image
+      podman_image:
+        name: nginx
+    - name: Starting nginx container
+      command: "podman rm nginx-autoindex --force"
+      ignore_errors: true
+    - name: Starting nginx container
+      command: "podman run -itd --restart=always --name nginx-autoindex -p 80:80 -v /etc/nginx/nginx.conf:/etc/nginx/nginx.conf -v /repo/:{{ rhel_repo_dir }} -d nginx"
+      ignore_errors: true
+    - name: Generating bash script for reposync
+      template: 
+        src: rhel8_reposync.j2
+        dest: "{{rhel_repo_dir }}rhel8_reposync.sh"
+        mode: 644
+  when:
+    - ansible_distribution == "RedHat"
+    - ansible_distribution_major_version == "8"
+  tags: starting_config_generation
+- name: Installing podman in rhel7 and generating bash config
+  block:
+    - name: installing podman
+      package: 
+        name: docker
+        state: present
+    - name: creating directory for nginx
+      file:
+        state: directory
+        path: /etc/nginx/
+        owner: root
+        group: root
+        recurse: yes
+    - name: generating nginx config
+      template:
+        src: nginx.j2
+        dest: /etc/nginx/nginx.conf
+        mode: 644
+    - name: Pull an image
+      podman_image:
+        name: nginx
+    - name: removing previous started containers
+      command: "docker rm nginx-autoindex -f"
+      ignore_errors: true
+    - name: Starting nginx container
+      command: "docker run -itd --restart=always --name nginx-autoindex -p 80:80 -v /etc/nginx/nginx.conf:/etc/nginx/nginx.conf -v /repo:{{ rhel_repo_dir }} -d nginx"
+      ignore_errors: true
+    - name: Generating bash script for reposync
+      template: 
+        src: rhel7_reposync.j2
+        dest: "{{rhel_repo_dir }}rhel7_reposync.sh"
+        mode: 777
+  when:
+    - ansible_distribution == "RedHat"
+    - ansible_distribution_major_version == "7"
+  tags: starting_config_generation
+
+#############
+# Working with bash scripts and permissions
+#############
+
+
+- name:  Changing the permissions for the dirrectory
+  file:
+    owner: root
+    group: root
+    mode: '777'
+    recurse: yes
+    path: "{{ rhel_repo_dir }}"
+  tags: starting_config_generation
+
+- name: adding reposync crontab for rhel8 machines
+  cron:
+    name: "RHEL reposync starter"
+    minute: "20"
+    hour: "0"
+    weekday: "sat"
+    user: root
+    job: "{{ rhel_repo_dir }}rhel8_reposync.sh"
+  when:
+    - ansible_distribution == "RedHat"
+    - ansible_distribution_major_version == "8"
+  tags: starting_config_generation
+
+- name: adding reposync crontab for rhel7 machines
+  cron:
+    name: "RHEL reposync starter"
+    minute: "20"
+    hour: "0"
+    weekday: "sat"
+    user: root
+    job: "{{ rhel_repo_dir }}rhel7_reposync.sh"
+  when:
+    - ansible_distribution == "RedHat"
+    - ansible_distribution_major_version == "7"
+  tags: starting_config_generation
+
+- name: adding reposync crontab for rhel7 machines
+  cron:
+    name: "RHEL reposync starter"
+    minute: "20"
+    hour: "0"
+    weekday: "sat"
+    user: root
+    job: "{{ rhel_repo_dir }}rhel7_reposync.sh"
+  when:
+    - ansible_distribution == "RedHat"
+    - ansible_distribution_major_version == "7"
+  tags: starting_config_generation
+
+

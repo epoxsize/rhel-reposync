@@ -1,0 +1,15 @@
+#!/bin/bash
+
+### starting reposync
+
+echo "syncing repos"
+
+{% for repo in rhsm_rhel7_repos %}
+reposync -p /repo --download-metadata --repo={{repo}}
+{% endfor %}
+
+echo "generating metadata"
+
+{% for repo  in rhsm_rhel7_repos %}
+createrepo  /repo{{repo}}
+{% endfor %}
