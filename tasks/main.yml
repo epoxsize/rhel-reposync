@@ -135,10 +135,6 @@
         src: nginx.j2
         dest: /etc/nginx/nginx.conf
         mode: 644
-    - name: Pull an image
-      docker_image:
-        name: nginx
-        source: pull
     - name: removing previous started containers
       command: "docker rm nginx-autoindex -f"
       ignore_errors: true
