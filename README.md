@@ -1,7 +1,7 @@
 Role Name
 =========
 
-A brief description of the role goes here.
+RHEL8 and RHEL7 Repositories local sync
 
 Requirements
 ------------
@@ -17,7 +17,6 @@ rhel_additional_software:
 rhel_ports_to_open:
   - 22/tcp
 
-
 If you want to use RHSM for external CDN, please set:
 
 enable_rhsm == True
@@ -26,8 +25,6 @@ If you're using your internal Satellite, please set:
 
 enable_rhsm == False
 
-
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
 
 Dependencies
 ------------
@@ -39,9 +36,22 @@ Example Playbook
 
 Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+Example of playbook starter. 
+
+---
+- hosts: rhel-reposync
+  gather_facts: yes
+  tasks:
+  - include_role:
+      name: rhel-reposync
+    vars:
+      enable_rhsm: True
+      rhsm_username: rhsm_username
+      rhsm_password: rhsm_password
+      rhsm_pool_id: pool_id
+
+Also, please check for default variables to set up repositories and default repo directory.
+
 
 License
 -------
@@ -51,4 +61,4 @@ BSD
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+email: dalekhin@redhat.com
