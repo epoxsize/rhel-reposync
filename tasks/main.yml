@@ -47,6 +47,7 @@
   service:
     name: firewalld
     state: started
+    enabled: yes
 - name: Enabling Nessecary ports
   firewalld:
     state: enabled
@@ -111,12 +112,17 @@
     - ansible_distribution == "RedHat"
     - ansible_distribution_major_version == "8"
   tags: starting_config_generation
-- name: Installing podman in rhel7 and generating bash config
+- name: Installing docker in rhel7 and generating bash config
   block:
-    - name: installing podman
+    - name: installing docker
       package: 
         name: docker
         state: present
+    - name: enabling docker service
+      service: 
+        name: docker
+        state: started
+        enabled: yes
     - name: creating directory for nginx
       file:
         state: directory
@@ -130,8 +136,9 @@
         dest: /etc/nginx/nginx.conf
         mode: 644
     - name: Pull an image
-      podman_image:
+      docker_image:
         name: nginx
+        source: pull
     - name: removing previous started containers
       command: "docker rm nginx-autoindex -f"
       ignore_errors: true
