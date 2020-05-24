@@ -39,20 +39,6 @@
     - ansible_distribution == "RedHat"
     - ansible_distribution_major_version == "8"
 ##### Installing some packages for testing purposes
-- name: Installing nginx in RHEL8
-  package: 
-    name: nginx
-    state: present
-  when: 
-    - ansible_distribution == "RedHat"
-    - ansible_distribution_major_version == "8"
-- name: Installing nginx in RHEL7
-  package: 
-    name: rh-nginx18
-    state: present
-  when: 
-    - ansible_distribution == "RedHat"
-    - ansible_distribution_major_version == "7"
 - name: Enabling firewalld
   service:
     name: firewalld
